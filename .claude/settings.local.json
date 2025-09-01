@@ -4,7 +4,10 @@
       "Bash(mkdir:*)",
       "Bash(flutter pub get:*)",
       "Bash(flutter run:*)",
-      "Bash(flutter doctor:*)"
+      "Bash(flutter doctor:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
