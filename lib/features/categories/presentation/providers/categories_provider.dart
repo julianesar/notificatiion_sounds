@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/category.dart' as domain;
 import '../../domain/usecases/get_categories.dart';
 
-enum CategoriesProviderState { loading, ready, error }
+enum CategoriesProviderState { idle, loading, ready, error }
 
 class CategoriesProvider with ChangeNotifier {
   final GetCategories _getCategories;
 
-  CategoriesProviderState _state = CategoriesProviderState.loading;
+  CategoriesProviderState _state = CategoriesProviderState.idle;
   List<domain.Category> _categories = [];
   String? _errorMessage;
 
@@ -18,27 +18,23 @@ class CategoriesProvider with ChangeNotifier {
   List<domain.Category> get categories => List.unmodifiable(_categories);
   String? get errorMessage => _errorMessage;
 
+  bool get isIdle => _state == CategoriesProviderState.idle;
   bool get isLoading => _state == CategoriesProviderState.loading;
   bool get hasError => _state == CategoriesProviderState.error;
   bool get isReady => _state == CategoriesProviderState.ready;
 
   Future<void> load() async {
-    if (_state == CategoriesProviderState.loading) {
-      return; // Evitar múltiples cargas simultáneas
-    }
+    if (_state == CategoriesProviderState.loading) return;
 
     try {
-      _setState(CategoriesProviderState.loading, null, []);
-
+      _setState(CategoriesProviderState.loading, null, _categories);
       final categories = await _getCategories.call();
-
       _setState(CategoriesProviderState.ready, null, categories);
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('CategoriesProvider error: $e');
         print('Stack trace: $stackTrace');
       }
-
       _setState(CategoriesProviderState.error, e.toString(), []);
     }
   }
