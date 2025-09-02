@@ -15,12 +15,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const FavoritesScreen(),
-    const Center(
-      child: Text(
-        'Downloads',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
+    const Center(child: Text('Downloads', style: TextStyle(fontSize: 24))),
   ];
 
   @override
@@ -36,10 +31,7 @@ class _MainScreenState extends State<MainScreen> {
         },
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
             label: 'Favorites',

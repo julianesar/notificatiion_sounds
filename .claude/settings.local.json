@@ -7,7 +7,10 @@
       "Bash(flutter doctor:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart format:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

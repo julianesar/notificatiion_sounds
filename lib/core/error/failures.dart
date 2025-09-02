@@ -2,10 +2,7 @@ abstract class Failure {
   final String message;
   final String? code;
 
-  const Failure({
-    required this.message,
-    this.code,
-  });
+  const Failure({required this.message, this.code});
 
   @override
   bool operator ==(Object other) =>
@@ -20,43 +17,25 @@ abstract class Failure {
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure({
-    required super.message,
-    super.code,
-  });
+  const NetworkFailure({required super.message, super.code});
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure({
-    required super.message,
-    super.code,
-  });
+  const ServerFailure({required super.message, super.code});
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure({
-    required super.message,
-    super.code,
-  });
+  const CacheFailure({required super.message, super.code});
 }
 
 class AudioFailure extends Failure {
-  const AudioFailure({
-    required super.message,
-    super.code,
-  });
+  const AudioFailure({required super.message, super.code});
 }
 
 class PermissionFailure extends Failure {
-  const PermissionFailure({
-    required super.message,
-    super.code,
-  });
+  const PermissionFailure({required super.message, super.code});
 }
 
 class StorageFailure extends Failure {
-  const StorageFailure({
-    required super.message,
-    super.code,
-  });
+  const StorageFailure({required super.message, super.code});
 }

@@ -8,9 +8,7 @@ extension StringExtensions on String {
   /// Capitalizes the first letter of each word
   String get capitalizeWords {
     if (isEmpty) return this;
-    return split(' ')
-        .map((word) => word.capitalize)
-        .join(' ');
+    return split(' ').map((word) => word.capitalize).join(' ');
   }
 
   /// Removes all whitespace from the string
@@ -25,7 +23,9 @@ extension StringExtensions on String {
 
   /// Checks if the string is a valid URL
   bool get isValidUrl {
-    return RegExp(r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$').hasMatch(this);
+    return RegExp(
+      r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$',
+    ).hasMatch(this);
   }
 
   /// Checks if the string contains only alphabetic characters
@@ -61,13 +61,13 @@ extension StringExtensions on String {
   String get toCamelCase {
     final words = split(RegExp(r'[\s_-]+'));
     if (words.isEmpty) return this;
-    
+
     final firstWord = words.first.toLowerCase();
     final capitalizedWords = words
         .skip(1)
         .map((word) => word.capitalize)
         .join();
-    
+
     return firstWord + capitalizedWords;
   }
 
@@ -110,14 +110,14 @@ extension StringExtensions on String {
     if (isEmpty) return this;
     final result = StringBuffer();
     String? previousChar;
-    
+
     for (int i = 0; i < length; i++) {
       if (this[i] != previousChar) {
         result.write(this[i]);
         previousChar = this[i];
       }
     }
-    
+
     return result.toString();
   }
 
@@ -125,12 +125,12 @@ extension StringExtensions on String {
   Duration? get toDuration {
     final parts = split(':');
     if (parts.length != 2) return null;
-    
+
     final minutes = int.tryParse(parts[0]);
     final seconds = int.tryParse(parts[1]);
-    
+
     if (minutes == null || seconds == null) return null;
-    
+
     return Duration(minutes: minutes, seconds: seconds);
   }
 
@@ -138,7 +138,7 @@ extension StringExtensions on String {
   String get asFileSize {
     final bytes = int.tryParse(this);
     if (bytes == null) return this;
-    
+
     const suffixes = ['B', 'KB', 'MB', 'GB'];
     var size = bytes.toDouble();
     var suffixIndex = 0;

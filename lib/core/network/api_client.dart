@@ -1,198 +1,169 @@
-import 'package:dio/dio.dart';
-import '../constants/app_constants.dart';
-import '../error/exceptions.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/app_config.dart';
 
 class ApiClient {
-  late final Dio _dio;
-  
-  ApiClient() {
-    _dio = Dio(BaseOptions(
-      baseUrl: '${AppConstants.baseUrl}/${AppConstants.apiVersion}',
-      connectTimeout: AppConstants.connectTimeout,
-      receiveTimeout: AppConstants.receiveTimeout,
-      sendTimeout: AppConstants.sendTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-API-Key': AppConstants.apiKey,
-      },
-    ));
-    
-    _setupInterceptors();
+  static ApiClient? _instance;
+  late SharedPreferences _prefs;
+
+  ApiClient._internal();
+
+  static Future<ApiClient> getInstance() async {
+    if (_instance == null) {
+      _instance = ApiClient._internal();
+      _instance!._prefs = await SharedPreferences.getInstance();
+    }
+    return _instance!;
   }
-  
-  void _setupInterceptors() {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          // Add authentication token if available
-          // options.headers['Authorization'] = 'Bearer $token';
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          handler.next(response);
-        },
-        onError: (error, handler) {
-          final customError = _handleError(error);
-          handler.reject(customError);
-        },
-      ),
-    );
-    
-    // Add logging interceptor in debug mode
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        error: true,
-      ),
-    );
-  }
-  
-  DioError _handleError(DioError error) {
-    switch (error.type) {
-      case DioErrorType.connectionTimeout:
-      case DioErrorType.sendTimeout:
-      case DioErrorType.receiveTimeout:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const NetworkException('Connection timeout'),
-          type: error.type,
-        );
-      case DioErrorType.badResponse:
-        return _handleServerError(error);
-      case DioErrorType.cancel:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const NetworkException('Request cancelled'),
-          type: error.type,
-        );
-      case DioErrorType.unknown:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const NetworkException('Network error occurred'),
-          type: error.type,
-        );
-      default:
-        return error;
+
+  void _log(String message) {
+    if (AppConfig.I().enableLogging) {
+      print('[ApiClient] $message');
     }
   }
-  
-  DioError _handleServerError(DioError error) {
-    final statusCode = error.response?.statusCode;
-    final message = error.response?.data?['message'] ?? 'Server error';
-    
-    switch (statusCode) {
-      case 400:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: ServerException('Bad request: $message'),
-          type: error.type,
-          response: error.response,
+
+  Future<http.Response> _get(Uri uri) async {
+    _log('GET $uri');
+
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+
+      _log('Response ${response.statusCode}: ${response.body.length} chars');
+      return response;
+    } on SocketException catch (e) {
+      _log('Network error: $e. Retrying...');
+      // Reintento simple en caso de error de red
+      await Future.delayed(const Duration(seconds: 1));
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      _log(
+        'Retry response ${response.statusCode}: ${response.body.length} chars',
+      );
+      return response;
+    } on HttpException catch (e) {
+      _log('HTTP error: $e. Retrying...');
+      // Reintento simple en caso de error HTTP
+      await Future.delayed(const Duration(seconds: 1));
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      _log(
+        'Retry response ${response.statusCode}: ${response.body.length} chars',
+      );
+      return response;
+    } catch (e) {
+      // Si el primer intento falla con error 5xx o timeout, reintentamos
+      if (e.toString().contains('TimeoutException')) {
+        _log('Timeout error: $e. Retrying...');
+        await Future.delayed(const Duration(seconds: 1));
+        final response = await http
+            .get(uri)
+            .timeout(const Duration(seconds: 8));
+        _log(
+          'Retry response ${response.statusCode}: ${response.body.length} chars',
         );
-      case 401:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const ServerException('Unauthorized'),
-          type: error.type,
-          response: error.response,
-        );
-      case 403:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const ServerException('Forbidden'),
-          type: error.type,
-          response: error.response,
-        );
-      case 404:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const ServerException('Not found'),
-          type: error.type,
-          response: error.response,
-        );
-      case 500:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: const ServerException('Internal server error'),
-          type: error.type,
-          response: error.response,
-        );
-      default:
-        return DioError(
-          requestOptions: error.requestOptions,
-          error: ServerException('Server error: $message'),
-          type: error.type,
-          response: error.response,
-        );
+        return response;
+      }
+      rethrow;
     }
   }
-  
-  Future<Response<T>> get<T>(
+
+  Future<Map<String, dynamic>> getJson(
     String path, {
-    Map<String, dynamic>? queryParameters,
-    Options? options,
+    Map<String, String>? query,
+    String? cacheKey,
   }) async {
-    return await _dio.get<T>(
-      path,
-      queryParameters: queryParameters,
-      options: options,
+    // Construir URI usando AppConfig.I().baseUrl
+    final baseUri = Uri.parse(AppConfig.I().baseUrl);
+    final uri = baseUri.replace(
+      path: '${baseUri.path}$path',
+      queryParameters: query,
     );
+
+    _log('getJson: $path, cacheKey: $cacheKey, query: $query');
+
+    // Intentar leer del caché si cacheKey está definido
+    if (cacheKey != null) {
+      final cachedData = _prefs.getString('cache:$cacheKey');
+      final cachedTimestamp = _prefs.getInt('cache:$cacheKey:ts');
+
+      if (cachedData != null && cachedTimestamp != null) {
+        final cacheAge =
+            DateTime.now().millisecondsSinceEpoch - cachedTimestamp;
+        final isExpired = cacheAge > AppConfig.I().cacheTtl.inMilliseconds;
+
+        if (!isExpired) {
+          _log('Cache hit for $cacheKey (age: ${cacheAge}ms)');
+          final jsonData = jsonDecode(cachedData) as Map<String, dynamic>;
+
+          // Refrescar en background si el caché está próximo a expirar (75% de TTL)
+          final shouldRefresh =
+              cacheAge > (AppConfig.I().cacheTtl.inMilliseconds * 0.75);
+          if (shouldRefresh) {
+            _log('Background refresh for $cacheKey');
+            _refreshInBackground(uri, cacheKey);
+          }
+
+          return jsonData;
+        } else {
+          _log('Cache expired for $cacheKey (age: ${cacheAge}ms)');
+        }
+      } else {
+        _log('No cache found for $cacheKey');
+      }
+    }
+
+    // Hacer la petición HTTP
+    final response = await _get(uri);
+
+    // Verificar si hay error 5xx y reintentar
+    if (response.statusCode >= 500 && response.statusCode < 600) {
+      _log('Server error ${response.statusCode}. Retrying...');
+      await Future.delayed(const Duration(seconds: 1));
+      final retryResponse = await _get(uri);
+      return _processResponse(retryResponse, cacheKey);
+    }
+
+    return _processResponse(response, cacheKey);
   }
-  
-  Future<Response<T>> post<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.post<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+
+  Map<String, dynamic> _processResponse(
+    http.Response response,
+    String? cacheKey,
+  ) {
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      // Guardar en caché si cacheKey está definido
+      if (cacheKey != null) {
+        _saveToCache(cacheKey, response.body);
+        _log('Saved to cache: $cacheKey');
+      }
+
+      return jsonData;
+    } else {
+      _log('HTTP Error ${response.statusCode}: ${response.body}');
+      throw HttpException(
+        'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+      );
+    }
   }
-  
-  Future<Response<T>> put<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.put<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+
+  void _saveToCache(String cacheKey, String data) {
+    _prefs.setString('cache:$cacheKey', data);
+    _prefs.setInt('cache:$cacheKey:ts', DateTime.now().millisecondsSinceEpoch);
   }
-  
-  Future<Response<T>> delete<T>(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
-    return await _dio.delete<T>(
-      path,
-      queryParameters: queryParameters,
-      options: options,
-    );
-  }
-  
-  Future<Response<T>> download<T>(
-    String urlPath,
-    String savePath, {
-    ProgressCallback? onReceiveProgress,
-    Map<String, dynamic>? queryParameters,
-    CancelToken? cancelToken,
-  }) async {
-    return await _dio.download(
-      urlPath,
-      savePath,
-      onReceiveProgress: onReceiveProgress,
-      queryParameters: queryParameters,
-      cancelToken: cancelToken,
-    );
+
+  void _refreshInBackground(Uri uri, String cacheKey) {
+    // No await - ejecutar en background
+    _get(uri)
+        .then((response) {
+          if (response.statusCode == 200) {
+            _saveToCache(cacheKey, response.body);
+            _log('Background refresh completed for $cacheKey');
+          }
+        })
+        .catchError((error) {
+          _log('Background refresh failed for $cacheKey: $error');
+        });
   }
 }
