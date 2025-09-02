@@ -55,7 +55,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: provider.retry,
+                    onPressed: provider.load,
                     child: const Text('Reintentar'),
                   ),
                 ],
@@ -63,51 +63,83 @@ class _CategoriesPageState extends State<CategoriesPage> {
             );
           }
 
+          // ⬇️ Grid de 2 columnas como en code .txt
           return RefreshIndicator(
             onRefresh: () => provider.load(),
-            child: ListView.separated(
-              addAutomaticKeepAlives: false,
+            child: GridView.builder(
               padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 2 items por fila
+                crossAxisSpacing: 16, // espacio horizontal
+                mainAxisSpacing: 16, // espacio vertical
+                childAspectRatio: 1.2, // proporción similar a code .txt
+              ),
               itemCount: provider.categories.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final category = provider.categories[index];
-                return Card(
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.music_note,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    title: Text(
-                      category.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TonesPage(
-                            categoryId: category.id,
-                            title: category.title,
-                          ),
+                return _CategoryTile(
+                  title: category.title,
+                  onTap: () {
+                    // Navega a la lista de tonos de la categoría
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TonesPage(
+                          categoryId: category.id,
+                          title: category.title,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Tarjeta estilo “card + inkWell” (patrón de code .txt)
+class _CategoryTile extends StatelessWidget {
+  final String title;
+  final VoidCallback onTap;
+
+  const _CategoryTile({required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons
+                    .music_note, // Si luego agregas iconos por categoría, cámbialo aquí
+                size: 40,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
