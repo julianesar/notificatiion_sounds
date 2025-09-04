@@ -12,7 +12,10 @@
       "Bash(dart format:*)",
       "Bash(curl:*)",
       "Bash(flutter clean:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Read(/D:\\Development\\flutter_projects\\notifications_sounds\\lib\\features\\tones\\presentation\\pages/**)",
+      "Read(/D:\\Development\\flutter_projects\\notifications_sounds\\lib\\core\\services/**)"
     ],
     "deny": [],
     "ask": []

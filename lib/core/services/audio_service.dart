@@ -171,6 +171,7 @@ class AudioService extends ChangeNotifier {
   /// Handle playback completion
   void _handlePlaybackComplete() {
     _currentlyPlayingId = null;
+    _position = Duration.zero;
     _clearError();
     _setLoading(false);
     debugPrint('AudioService: Playback completed');
