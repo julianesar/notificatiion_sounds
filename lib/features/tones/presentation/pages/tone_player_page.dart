@@ -6,11 +6,13 @@ import '../../../../core/services/audio_service.dart';
 class TonePlayerPage extends StatefulWidget {
   final Tone tone;
   final String categoryTitle;
+  final List<Tone> tones;
 
   const TonePlayerPage({
     super.key,
     required this.tone,
     required this.categoryTitle,
+    required this.tones,
   });
 
   @override
@@ -20,10 +22,14 @@ class TonePlayerPage extends StatefulWidget {
 class _TonePlayerPageState extends State<TonePlayerPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
+  late Tone _currentTone;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _currentTone = widget.tone;
+    _currentIndex = widget.tones.indexWhere((tone) => tone.id == widget.tone.id);
     _rotationController = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
@@ -39,10 +45,50 @@ class _TonePlayerPageState extends State<TonePlayerPage>
   void _togglePlayPause() async {
     final audioService = context.read<AudioService>();
     try {
-      await audioService.toggleTone(widget.tone.id, widget.tone.url);
+      await audioService.toggleTone(_currentTone.id, _currentTone.url);
     } catch (e) {
       _showErrorSnackBar('Error al reproducir audio: $e');
     }
+  }
+
+  void _playPreviousTone() async {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+        _currentTone = widget.tones[_currentIndex];
+      });
+      
+      final audioService = context.read<AudioService>();
+      try {
+        await audioService.playTone(_currentTone.id, _currentTone.url);
+      } catch (e) {
+        _showErrorSnackBar('Error al reproducir audio: $e');
+      }
+    }
+  }
+
+  void _playNextTone() async {
+    if (_currentIndex < widget.tones.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _currentTone = widget.tones[_currentIndex];
+      });
+      
+      final audioService = context.read<AudioService>();
+      try {
+        await audioService.playTone(_currentTone.id, _currentTone.url);
+      } catch (e) {
+        _showErrorSnackBar('Error al reproducir audio: $e');
+      }
+    }
+  }
+
+  bool _hasPrevious() {
+    return _currentIndex > 0;
+  }
+
+  bool _hasNext() {
+    return _currentIndex < widget.tones.length - 1;
   }
   
   void _showErrorSnackBar(String message) {
@@ -149,7 +195,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                 child: Column(
                   children: [
                     Text(
-                      widget.tone.title,
+                      _currentTone.title,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -233,20 +279,17 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    onPressed: () {
-                      final audioService = context.read<AudioService>();
-                      audioService.seekTo(Duration.zero);
-                    },
+                    onPressed: _hasPrevious() ? _playPreviousTone : null,
                     icon: Icon(
-                      Icons.replay_10,
+                      Icons.skip_previous,
                       size: 32,
-                      color: colorScheme.onSurfaceVariant,
+                      color: _hasPrevious() ? colorScheme.onSurfaceVariant : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ),
                   Consumer<AudioService>(
                     builder: (context, audioService, child) {
-                      final isCurrentTonePlaying = audioService.isTonePlaying(widget.tone.id);
-                      final isLoading = audioService.isLoading && audioService.currentlyPlayingId == widget.tone.id;
+                      final isCurrentTonePlaying = audioService.isTonePlaying(_currentTone.id);
+                      final isLoading = audioService.isLoading && audioService.currentlyPlayingId == _currentTone.id;
                       
                       // Control animation based on audio service state
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -292,16 +335,11 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                     },
                   ),
                   IconButton(
-                    onPressed: () {
-                      final audioService = context.read<AudioService>();
-                      final currentPosition = audioService.position;
-                      final newPosition = currentPosition + const Duration(seconds: 10);
-                      audioService.seekTo(newPosition);
-                    },
+                    onPressed: _hasNext() ? _playNextTone : null,
                     icon: Icon(
-                      Icons.forward_10,
+                      Icons.skip_next,
                       size: 32,
-                      color: colorScheme.onSurfaceVariant,
+                      color: _hasNext() ? colorScheme.onSurfaceVariant : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -350,10 +388,10 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                 title: const Text('Compartir'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showSnackBar(context, 'Compartiendo ${widget.tone.title}');
+                  _showSnackBar(context, 'Compartiendo ${_currentTone.title}');
                 },
               ),
-              if (widget.tone.requiresAttribution) ...[
+              if (_currentTone.requiresAttribution) ...[
                 ListTile(
                   leading: const Icon(Icons.info_outline),
                   title: const Text('Información de atribución'),
@@ -388,7 +426,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Información de atribución'),
-        content: Text(widget.tone.attributionText ?? 'Sin información disponible'),
+        content: Text(_currentTone.attributionText ?? 'Sin información disponible'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

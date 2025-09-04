@@ -200,12 +200,16 @@ class _TonesPageState extends State<TonesPage> {
   }
 
   void _openPlayer(BuildContext context, tone) {
+    final tonesProvider = context.read<TonesProvider>();
+    final tones = tonesProvider.getTonesForCategory(widget.categoryId);
+    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TonePlayerPage(
           tone: tone,
           categoryTitle: widget.title,
+          tones: tones,
         ),
       ),
     );
