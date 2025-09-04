@@ -16,7 +16,8 @@
       "Bash(git push:*)",
       "Read(/D:\\Development\\flutter_projects\\notifications_sounds\\lib\\features\\tones\\presentation\\pages/**)",
       "Read(/D:\\Development\\flutter_projects\\notifications_sounds\\lib\\core\\services/**)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": [],
     "ask": []

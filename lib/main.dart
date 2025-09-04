@@ -12,6 +12,13 @@ import 'features/tones/data/datasources/tones_remote_ds.dart';
 import 'features/tones/data/repositories/tones_repository_impl.dart';
 import 'features/tones/domain/usecases/get_tones_by_category.dart';
 import 'features/tones/presentation/providers/tones_provider.dart';
+import 'features/favorites/data/datasources/favorites_local_ds.dart';
+import 'features/favorites/data/repositories/favorites_repository_impl.dart';
+import 'features/favorites/domain/usecases/get_all_favorites.dart';
+import 'features/favorites/domain/usecases/toggle_favorite.dart';
+import 'features/favorites/domain/usecases/is_favorite.dart';
+import 'features/favorites/domain/usecases/clear_all_favorites.dart';
+import 'features/favorites/presentation/providers/favorites_provider.dart';
 import 'core/services/audio_service.dart';
 
 void main() async {
@@ -26,6 +33,10 @@ void main() async {
   
   // Initialize audio service
   await AudioService.instance.initialize();
+
+  // Initialize favorites dependencies
+  final favoritesLocalDS = FavoritesLocalDSImpl();
+  final favoritesRepository = FavoritesRepositoryImpl(favoritesLocalDS);
 
   runApp(
     MultiProvider(
@@ -42,6 +53,14 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => TonesProvider(
             GetTonesByCategory(TonesRepositoryImpl(TonesRemoteDS(apiClient))),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FavoritesProvider(
+            getAllFavorites: GetAllFavorites(favoritesRepository),
+            toggleFavorite: ToggleFavorite(favoritesRepository),
+            isFavorite: IsFavorite(favoritesRepository),
+            clearAllFavorites: ClearAllFavorites(favoritesRepository),
           ),
         ),
       ],

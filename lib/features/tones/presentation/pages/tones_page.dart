@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/tones_provider.dart';
 import 'tone_player_page.dart';
 import '../../../../core/services/audio_service.dart';
+import '../../../favorites/presentation/providers/favorites_provider.dart';
 
 class TonesPage extends StatefulWidget {
   final String categoryId;
@@ -21,6 +22,7 @@ class _TonesPageState extends State<TonesPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TonesProvider>().load(widget.categoryId);
+      context.read<FavoritesProvider>().loadFavorites();
     });
   }
 
@@ -172,10 +174,18 @@ class _TonesPageState extends State<TonesPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              onPressed: () => _toggleFavorite(tone),
-                              icon: const Icon(Icons.favorite_border),
-                              tooltip: 'Agregar a favoritos',
+                            Consumer<FavoritesProvider>(
+                              builder: (context, favoritesProvider, child) {
+                                final isFavorite = favoritesProvider.isFavoriteSync(tone.id);
+                                return IconButton(
+                                  onPressed: () => _toggleFavorite(tone),
+                                  icon: Icon(
+                                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                                    color: isFavorite ? Colors.red : null,
+                                  ),
+                                  tooltip: isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos',
+                                );
+                              },
                             ),
                             IconButton(
                               onPressed: () => _openPlayer(context, tone),
@@ -207,13 +217,34 @@ class _TonesPageState extends State<TonesPage> {
     }
   }
 
-  void _toggleFavorite(tone) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidad de favoritos próximamente'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _toggleFavorite(tone) async {
+    final favoritesProvider = context.read<FavoritesProvider>();
+    
+    try {
+      final isNowFavorite = await favoritesProvider.toggleFavoriteStatus(
+        tone.id,
+        tone.title,
+        tone.url,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNowFavorite
+                  ? 'Agregado a favoritos'
+                  : 'Eliminado de favoritos',
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(context, 'Error al cambiar favorito: $e');
+      }
+    }
   }
 
   void _openPlayer(BuildContext context, tone) {
@@ -252,32 +283,4 @@ class _TonesPageState extends State<TonesPage> {
     );
   }
 
-  void _showToneSnackBar(BuildContext context, tone) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('URL: ${tone.url}'),
-            if (tone.requiresAttribution && tone.attributionText != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Atribución: ${tone.attributionText}',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Cerrar',
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
-  }
 }
