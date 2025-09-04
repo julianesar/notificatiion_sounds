@@ -30,7 +30,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
   void initState() {
     super.initState();
     _currentTone = widget.tone;
-    _currentIndex = widget.tones.indexWhere((tone) => tone.id == widget.tone.id);
+    _currentIndex = widget.tones.indexWhere(
+      (tone) => tone.id == widget.tone.id,
+    );
     _rotationController = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
@@ -48,7 +50,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
     setState(() {
       _isLocalLoading = true;
     });
-    
+
     try {
       await audioService.toggleTone(_currentTone.id, _currentTone.url);
     } catch (e) {
@@ -69,7 +71,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
         _currentTone = widget.tones[_currentIndex];
         _isLocalLoading = true;
       });
-      
+
       final audioService = context.read<AudioService>();
       try {
         await audioService.playTone(_currentTone.id, _currentTone.url);
@@ -92,7 +94,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
         _currentTone = widget.tones[_currentIndex];
         _isLocalLoading = true;
       });
-      
+
       final audioService = context.read<AudioService>();
       try {
         await audioService.playTone(_currentTone.id, _currentTone.url);
@@ -115,7 +117,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
   bool _hasNext() {
     return _currentIndex < widget.tones.length - 1;
   }
-  
+
   void _showErrorSnackBar(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -127,22 +129,22 @@ class _TonePlayerPageState extends State<TonePlayerPage>
     }
   }
 
-
   void _seekTo(double value) async {
     final audioService = context.read<AudioService>();
     final duration = audioService.duration;
     if (duration != null) {
-      final position = Duration(milliseconds: (value * duration.inMilliseconds).round());
+      final position = Duration(
+        milliseconds: (value * duration.inMilliseconds).round(),
+      );
       await audioService.seekTo(position);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -169,7 +171,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
           child: Column(
             children: [
               const SizedBox(height: 20),
-              
+
               // Album Art / Visualization
               Expanded(
                 flex: 3,
@@ -211,9 +213,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Song Info
               Expanded(
                 flex: 1,
@@ -241,16 +243,16 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Progress Bar
               Consumer<AudioService>(
                 builder: (context, audioService, child) {
                   final duration = audioService.duration ?? Duration.zero;
                   final position = audioService.position;
                   final progress = audioService.progress;
-                  
+
                   return Column(
                     children: [
                       SliderTheme(
@@ -263,13 +265,18 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                             overlayRadius: 16,
                           ),
                           activeTrackColor: colorScheme.primary,
-                          inactiveTrackColor: colorScheme.surfaceContainerHighest,
+                          inactiveTrackColor:
+                              colorScheme.surfaceContainerHighest,
                           thumbColor: colorScheme.primary,
-                          overlayColor: colorScheme.primary.withValues(alpha: 0.2),
+                          overlayColor: colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                         child: Slider(
                           value: progress,
-                          onChanged: duration.inMilliseconds > 0 ? _seekTo : null,
+                          onChanged: duration.inMilliseconds > 0
+                              ? _seekTo
+                              : null,
                         ),
                       ),
                       Padding(
@@ -296,9 +303,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                   );
                 },
               ),
-              
+
               const SizedBox(height: 30),
-              
+
               // Control Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -308,18 +315,27 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                     icon: Icon(
                       Icons.skip_previous,
                       size: 32,
-                      color: _hasPrevious() ? colorScheme.onSurfaceVariant : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      color: _hasPrevious()
+                          ? colorScheme.onSurfaceVariant
+                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ),
                   Consumer<AudioService>(
                     builder: (context, audioService, child) {
-                      final isCurrentTonePlaying = audioService.isTonePlaying(_currentTone.id);
-                      final isLoading = _isLocalLoading || (audioService.isLoading && audioService.currentlyPlayingId == _currentTone.id);
-                      
+                      final isCurrentTonePlaying = audioService.isTonePlaying(
+                        _currentTone.id,
+                      );
+                      final isLoading =
+                          _isLocalLoading ||
+                          (audioService.isLoading &&
+                              audioService.currentlyPlayingId ==
+                                  _currentTone.id);
+
                       // Control animation based on audio service state
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
-                          if (isCurrentTonePlaying && !_rotationController.isAnimating) {
+                          if (isCurrentTonePlaying &&
+                              !_rotationController.isAnimating) {
                             _rotationController.repeat();
                             // Clear local loading when audio starts playing
                             if (_isLocalLoading) {
@@ -327,12 +343,13 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                                 _isLocalLoading = false;
                               });
                             }
-                          } else if (!isCurrentTonePlaying && _rotationController.isAnimating) {
+                          } else if (!isCurrentTonePlaying &&
+                              _rotationController.isAnimating) {
                             _rotationController.stop();
                           }
                         }
                       });
-                      
+
                       return Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -357,7 +374,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                                   ),
                                 )
                               : Icon(
-                                  isCurrentTonePlaying ? Icons.stop : Icons.play_arrow,
+                                  isCurrentTonePlaying
+                                      ? Icons.stop
+                                      : Icons.play_arrow,
                                   size: 40,
                                   color: colorScheme.onPrimary,
                                 ),
@@ -370,12 +389,14 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                     icon: Icon(
                       Icons.skip_next,
                       size: 32,
-                      color: _hasNext() ? colorScheme.onSurfaceVariant : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      color: _hasNext()
+                          ? colorScheme.onSurfaceVariant
+                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 40),
             ],
           ),
@@ -401,7 +422,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -445,9 +468,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -457,7 +478,9 @@ class _TonePlayerPageState extends State<TonePlayerPage>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Información de atribución'),
-        content: Text(_currentTone.attributionText ?? 'Sin información disponible'),
+        content: Text(
+          _currentTone.attributionText ?? 'Sin información disponible',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

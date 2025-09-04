@@ -169,13 +169,21 @@ class _TonesPageState extends State<TonesPage> {
                           widget.title,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        trailing: tone.requiresAttribution
-                            ? IconButton(
-                                onPressed: () => _showToneSnackBar(context, tone),
-                                icon: const Icon(Icons.info, color: Colors.orange),
-                                tooltip: 'Información de atribución',
-                              )
-                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => _toggleFavorite(tone),
+                              icon: const Icon(Icons.favorite_border),
+                              tooltip: 'Agregar a favoritos',
+                            ),
+                            IconButton(
+                              onPressed: () => _openPlayer(context, tone),
+                              icon: const Icon(Icons.arrow_forward),
+                              tooltip: 'Abrir reproductor',
+                            ),
+                          ],
+                        ),
                         onTap: () => _openPlayer(context, tone),
                       );
                     },
@@ -197,6 +205,15 @@ class _TonesPageState extends State<TonesPage> {
         _showErrorSnackBar(context, 'Error al reproducir audio: $e');
       }
     }
+  }
+
+  void _toggleFavorite(tone) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Funcionalidad de favoritos próximamente'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _openPlayer(BuildContext context, tone) {
