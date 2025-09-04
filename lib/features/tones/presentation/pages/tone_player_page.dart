@@ -24,6 +24,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
   late AnimationController _rotationController;
   late Tone _currentTone;
   int _currentIndex = 0;
+  bool _isLocalLoading = false;
 
   @override
   void initState() {
@@ -44,10 +45,20 @@ class _TonePlayerPageState extends State<TonePlayerPage>
 
   void _togglePlayPause() async {
     final audioService = context.read<AudioService>();
+    setState(() {
+      _isLocalLoading = true;
+    });
+    
     try {
       await audioService.toggleTone(_currentTone.id, _currentTone.url);
     } catch (e) {
       _showErrorSnackBar('Error al reproducir audio: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLocalLoading = false;
+        });
+      }
     }
   }
 
@@ -56,6 +67,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
       setState(() {
         _currentIndex--;
         _currentTone = widget.tones[_currentIndex];
+        _isLocalLoading = true;
       });
       
       final audioService = context.read<AudioService>();
@@ -63,6 +75,12 @@ class _TonePlayerPageState extends State<TonePlayerPage>
         await audioService.playTone(_currentTone.id, _currentTone.url);
       } catch (e) {
         _showErrorSnackBar('Error al reproducir audio: $e');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLocalLoading = false;
+          });
+        }
       }
     }
   }
@@ -72,6 +90,7 @@ class _TonePlayerPageState extends State<TonePlayerPage>
       setState(() {
         _currentIndex++;
         _currentTone = widget.tones[_currentIndex];
+        _isLocalLoading = true;
       });
       
       final audioService = context.read<AudioService>();
@@ -79,6 +98,12 @@ class _TonePlayerPageState extends State<TonePlayerPage>
         await audioService.playTone(_currentTone.id, _currentTone.url);
       } catch (e) {
         _showErrorSnackBar('Error al reproducir audio: $e');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLocalLoading = false;
+          });
+        }
       }
     }
   }
@@ -289,13 +314,19 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                   Consumer<AudioService>(
                     builder: (context, audioService, child) {
                       final isCurrentTonePlaying = audioService.isTonePlaying(_currentTone.id);
-                      final isLoading = audioService.isLoading && audioService.currentlyPlayingId == _currentTone.id;
+                      final isLoading = _isLocalLoading || (audioService.isLoading && audioService.currentlyPlayingId == _currentTone.id);
                       
                       // Control animation based on audio service state
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
                           if (isCurrentTonePlaying && !_rotationController.isAnimating) {
                             _rotationController.repeat();
+                            // Clear local loading when audio starts playing
+                            if (_isLocalLoading) {
+                              setState(() {
+                                _isLocalLoading = false;
+                              });
+                            }
                           } else if (!isCurrentTonePlaying && _rotationController.isAnimating) {
                             _rotationController.stop();
                           }
@@ -318,10 +349,10 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                           onPressed: isLoading ? null : _togglePlayPause,
                           icon: isLoading
                               ? SizedBox(
-                                  width: 24,
-                                  height: 24,
+                                  width: 40,
+                                  height: 40,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                                    strokeWidth: 3,
                                     color: colorScheme.onPrimary,
                                   ),
                                 )
