@@ -43,6 +43,9 @@ dependencies:
   
   # Local storage for cache and preferences
   shared_preferences: ^2.2.3
+  
+  # Professional audio player for ringtones
+  just_audio: ^0.9.40
 
 dev_dependencies:
   flutter_test:

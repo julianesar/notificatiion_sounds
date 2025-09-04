@@ -79,6 +79,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 final category = provider.categories[index];
                 return _CategoryTile(
                   title: category.title,
+                  categoryId: category.id,
                   onTap: () {
                     // Navega a la lista de tonos de la categoría
                     Navigator.push(
@@ -101,12 +102,58 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 }
 
-/// Tarjeta estilo “card + inkWell” (patrón de code .txt)
+/// Tarjeta estilo "card + inkWell" (patrón de code .txt)
 class _CategoryTile extends StatelessWidget {
   final String title;
+  final String categoryId;
   final VoidCallback onTap;
 
-  const _CategoryTile({required this.title, required this.onTap});
+  const _CategoryTile({
+    required this.title,
+    required this.categoryId,
+    required this.onTap,
+  });
+
+  IconData _getCategoryIcon() {
+    // Mapeo de IDs/títulos de categorías a iconos relevantes
+    final titleLower = title.toLowerCase();
+
+    if (titleLower.contains('notificacion') ||
+        titleLower.contains('notification')) {
+      return Icons.notifications;
+    } else if (titleLower.contains('alarm') ||
+        titleLower.contains('despertar')) {
+      return Icons.alarm;
+    } else if (titleLower.contains('llamada') ||
+        titleLower.contains('call') ||
+        titleLower.contains('ring')) {
+      return Icons.phone;
+    } else if (titleLower.contains('mensaje') ||
+        titleLower.contains('sms') ||
+        titleLower.contains('text')) {
+      return Icons.message;
+    } else if (titleLower.contains('social') || titleLower.contains('red')) {
+      return Icons.people;
+    } else if (titleLower.contains('clasic') ||
+        titleLower.contains('classic') ||
+        titleLower.contains('vintage')) {
+      return Icons.library_music;
+    } else if (titleLower.contains('email') ||
+        titleLower.contains('mail') ||
+        titleLower.contains('correo')) {
+      return Icons.email;
+    } else if (titleLower.contains('game') || titleLower.contains('juego')) {
+      return Icons.videogame_asset;
+    } else if (titleLower.contains('nature') ||
+        titleLower.contains('natural')) {
+      return Icons.nature;
+    } else if (titleLower.contains('electronic') ||
+        titleLower.contains('digital')) {
+      return Icons.computer;
+    } else {
+      return Icons.music_note; // Default fallback
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,8 +169,7 @@ class _CategoryTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons
-                    .music_note, // Si luego agregas iconos por categoría, cámbialo aquí
+                _getCategoryIcon(),
                 size: 40,
                 color: Theme.of(context).colorScheme.primary,
               ),

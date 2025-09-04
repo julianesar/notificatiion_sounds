@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/tones_provider.dart';
+import 'tone_player_page.dart';
+import '../../../../core/services/audio_service.dart';
 
 class TonesPage extends StatefulWidget {
   final String categoryId;
@@ -13,6 +15,7 @@ class TonesPage extends StatefulWidget {
 }
 
 class _TonesPageState extends State<TonesPage> {
+
   @override
   void initState() {
     super.initState();
@@ -26,10 +29,11 @@ class _TonesPageState extends State<TonesPage> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: Consumer<TonesProvider>(
-        builder: (context, provider, child) {
-          final tones = provider.getTonesForCategory(widget.categoryId);
-          final isLoading = provider.isCategoryLoading(widget.categoryId);
-          final hasError = provider.hasError;
+        builder: (context, tonesProvider, child) {
+          final tones = tonesProvider.getTonesForCategory(widget.categoryId);
+          final isLoading = tonesProvider.isCategoryLoading(widget.categoryId);
+          final hasError = tonesProvider.hasError;
+          
 
           if (isLoading && tones.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -54,14 +58,14 @@ class _TonesPageState extends State<TonesPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
-                      provider.errorMessage ?? 'Error desconocido',
+                      tonesProvider.errorMessage ?? 'Error desconocido',
                       style: Theme.of(context).textTheme.bodySmall,
                       textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => provider.retry(widget.categoryId),
+                    onPressed: () => tonesProvider.retry(widget.categoryId),
                     child: const Text('Reintentar'),
                   ),
                 ],
@@ -86,13 +90,13 @@ class _TonesPageState extends State<TonesPage> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.load(widget.categoryId),
+            onRefresh: () => tonesProvider.load(widget.categoryId),
             child: ListView.builder(
               addAutomaticKeepAlives: false,
               padding: const EdgeInsets.all(16),
               itemCount:
                   tones.length +
-                  (provider.hasMoreTones(widget.categoryId) ? 1 : 0),
+                  (tonesProvider.hasMoreTones(widget.categoryId) ? 1 : 0),
               itemBuilder: (context, index) {
                 // Mostrar indicador de carga al final si hay más tonos
                 if (index == tones.length) {
@@ -106,7 +110,7 @@ class _TonesPageState extends State<TonesPage> {
                       padding: const EdgeInsets.all(16),
                       child: Center(
                         child: ElevatedButton(
-                          onPressed: () => provider.loadMore(widget.categoryId),
+                          onPressed: () => tonesProvider.loadMore(widget.categoryId),
                           child: const Text('Cargar más'),
                         ),
                       ),
@@ -116,40 +120,113 @@ class _TonesPageState extends State<TonesPage> {
 
                 final tone = tones[index];
                 return Card(
+                  key: ValueKey(tone.id), // Add unique key for each card
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.audiotrack,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    title: Text(
-                      tone.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: tone.attributionText != null
-                        ? Text(
-                            tone.attributionText!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          )
-                        : null,
-                    trailing: tone.requiresAttribution
-                        ? const Icon(Icons.info, color: Colors.orange)
-                        : const Icon(Icons.play_arrow),
-                    onTap: () => _showToneSnackBar(context, tone),
+                  child: Consumer<AudioService>(
+                    builder: (context, audioService, child) {
+                      final isPlaying = audioService.isTonePlaying(tone.id);
+                      final isAudioLoading = audioService.isLoading && audioService.currentlyPlayingId == tone.id;
+                      
+                      // Debug print
+                      print('Card ${tone.id}: isPlaying=$isPlaying, isLoading=$isAudioLoading, currentId=${audioService.currentlyPlayingId}');
+                      
+                      return ListTile(
+                        leading: GestureDetector(
+                          onTap: () => _toggleAudioPlay(audioService, tone),
+                          child: Container(
+                            key: ValueKey('${tone.id}_button'), // Unique key for button
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: isAudioLoading
+                                  ? SizedBox(
+                                      key: const ValueKey('loading'),
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                    )
+                                  : Icon(
+                                      isPlaying ? Icons.stop : Icons.play_arrow,
+                                      key: ValueKey(isPlaying ? 'stop' : 'play'),
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          tone.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          widget.title,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        trailing: tone.requiresAttribution
+                            ? IconButton(
+                                onPressed: () => _showToneSnackBar(context, tone),
+                                icon: const Icon(Icons.info, color: Colors.orange),
+                                tooltip: 'Información de atribución',
+                              )
+                            : null,
+                        onTap: () => _openPlayer(context, tone),
+                      );
+                    },
                   ),
                 );
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _toggleAudioPlay(AudioService audioService, tone) async {
+    try {
+      await audioService.toggleTone(tone.id, tone.url);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(context, 'Error al reproducir audio: $e');
+      }
+    }
+  }
+
+  void _openPlayer(BuildContext context, tone) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TonePlayerPage(
+          tone: tone,
+          categoryTitle: widget.title,
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }

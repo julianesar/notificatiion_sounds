@@ -12,6 +12,7 @@ import 'features/tones/data/datasources/tones_remote_ds.dart';
 import 'features/tones/data/repositories/tones_repository_impl.dart';
 import 'features/tones/domain/usecases/get_tones_by_category.dart';
 import 'features/tones/presentation/providers/tones_provider.dart';
+import 'core/services/audio_service.dart';
 
 void main() async {
   // Asegurarse de que los widgets estén inicializados
@@ -22,11 +23,15 @@ void main() async {
 
   // Obtener instancia de ApiClient de forma asíncrona
   final apiClient = await ApiClient.getInstance();
+  
+  // Initialize audio service
+  await AudioService.instance.initialize();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: AudioService.instance),
         ChangeNotifierProvider(
           create: (_) => CategoriesProvider(
             GetCategories(

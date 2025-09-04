@@ -10,7 +10,9 @@
       "Bash(tree:*)",
       "Bash(flutter analyze:*)",
       "Bash(dart format:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(flutter clean:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
