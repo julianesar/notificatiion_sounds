@@ -188,9 +188,9 @@ class _TonesPageState extends State<TonesPage> {
                               },
                             ),
                             IconButton(
-                              onPressed: () => _openPlayer(context, tone),
-                              icon: const Icon(Icons.arrow_forward),
-                              tooltip: 'Abrir reproductor',
+                              onPressed: () => _showOptionsMenu(context, tone),
+                              icon: const Icon(Icons.more_vert),
+                              tooltip: 'Opciones',
                             ),
                           ],
                         ),
@@ -279,6 +279,100 @@ class _TonesPageState extends State<TonesPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
+      ),
+    );
+  }
+
+  void _showOptionsMenu(BuildContext context, tone) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.play_arrow),
+                title: const Text('Abrir reproductor'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openPlayer(context, tone);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.download),
+                title: const Text('Descargar'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSnackBar(context, 'Función de descarga próximamente');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text('Compartir'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSnackBar(context, 'Compartiendo ${tone.title}');
+                },
+              ),
+              if (tone.requiresAttribution) ...[
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('Información de atribución'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showAttributionDialog(context, tone);
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showAttributionDialog(BuildContext context, tone) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Información de atribución'),
+        content: Text(
+          tone.attributionText ?? 'Sin información disponible',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
       ),
     );
   }
