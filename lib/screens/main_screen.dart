@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'favorites_screen.dart';
+import '../features/downloads/presentation/pages/downloads_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -15,7 +16,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const FavoritesScreen(),
-    const Center(child: Text('Downloads', style: TextStyle(fontSize: 24))),
+    const DownloadsPage(),
   ];
 
   @override

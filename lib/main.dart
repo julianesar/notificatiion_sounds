@@ -19,6 +19,13 @@ import 'features/favorites/domain/usecases/toggle_favorite.dart';
 import 'features/favorites/domain/usecases/is_favorite.dart';
 import 'features/favorites/domain/usecases/clear_all_favorites.dart';
 import 'features/favorites/presentation/providers/favorites_provider.dart';
+import 'features/downloads/data/datasources/downloads_local_ds.dart';
+import 'features/downloads/data/repositories/downloads_repository_impl.dart';
+import 'features/downloads/domain/usecases/get_all_downloads.dart';
+import 'features/downloads/domain/usecases/download_tone.dart';
+import 'features/downloads/domain/usecases/delete_download.dart';
+import 'features/downloads/domain/usecases/is_downloaded.dart';
+import 'features/downloads/presentation/providers/downloads_provider.dart';
 import 'core/services/audio_service.dart';
 
 void main() async {
@@ -37,6 +44,10 @@ void main() async {
   // Initialize favorites dependencies
   final favoritesLocalDS = FavoritesLocalDSImpl();
   final favoritesRepository = FavoritesRepositoryImpl(favoritesLocalDS);
+
+  // Initialize downloads dependencies
+  final downloadsLocalDS = DownloadsLocalDSImpl();
+  final downloadsRepository = DownloadsRepositoryImpl(downloadsLocalDS);
 
   runApp(
     MultiProvider(
@@ -61,6 +72,14 @@ void main() async {
             toggleFavorite: ToggleFavorite(favoritesRepository),
             isFavorite: IsFavorite(favoritesRepository),
             clearAllFavorites: ClearAllFavorites(favoritesRepository),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DownloadsProvider(
+            getAllDownloads: GetAllDownloads(downloadsRepository),
+            downloadTone: DownloadTone(downloadsRepository),
+            deleteDownload: DeleteDownload(downloadsRepository),
+            isDownloaded: IsDownloaded(downloadsRepository),
           ),
         ),
       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/tone.dart';
 import '../../../../core/services/audio_service.dart';
+import '../../../downloads/presentation/providers/downloads_provider.dart';
 
 class TonePlayerPage extends StatefulWidget {
   final Tone tone;
@@ -429,12 +430,36 @@ class _TonePlayerPageState extends State<TonePlayerPage>
                 ),
               ),
               const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.download),
-                title: const Text('Descargar'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showSnackBar(context, 'Función de descarga próximamente');
+              Consumer<DownloadsProvider>(
+                builder: (context, downloadsProvider, child) {
+                  final isDownloading = downloadsProvider.isToneDownloading(_currentTone.id);
+                  final isDownloaded = downloadsProvider.isToneDownloadedSync(_currentTone.id);
+                  
+                  if (isDownloaded) {
+                    return ListTile(
+                      leading: const Icon(Icons.download_done, color: Colors.green),
+                      title: const Text('Ya descargado'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSnackBar(context, 'El tono ya está descargado');
+                      },
+                    );
+                  }
+                  
+                  return ListTile(
+                    leading: isDownloading 
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download),
+                    title: Text(isDownloading ? 'Descargando...' : 'Descargar'),
+                    onTap: isDownloading ? null : () {
+                      Navigator.pop(context);
+                      _downloadTone();
+                    },
+                  );
                 },
               ),
               ListTile(
@@ -489,5 +514,33 @@ class _TonePlayerPageState extends State<TonePlayerPage>
         ],
       ),
     );
+  }
+
+  Future<void> _downloadTone() async {
+    final downloadsProvider = context.read<DownloadsProvider>();
+    
+    final success = await downloadsProvider.downloadToneAsync(_currentTone);
+    
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.download_done, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('${_currentTone.title} descargado correctamente')),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        _showErrorSnackBar(downloadsProvider.errorMessage ?? 'Error al descargar el tono');
+      }
+    }
   }
 }

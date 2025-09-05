@@ -50,6 +50,9 @@ dependencies:
   # Local database for favorites
   sqflite: ^2.3.0
   path: ^1.8.3
+  
+  # Path provider for downloads directory
+  path_provider: ^2.1.3
 
 dev_dependencies:
   flutter_test:
